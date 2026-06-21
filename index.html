@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamim's Expense Tracker - Premium</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --secondary: #92fe9d;
+            --rgb-glow: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ff0000);
+            --bg-color: #0f0c29;
+            --card-bg: rgba(20, 20, 30, 0.7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: var(--rgb-glow);
+            background-size: 400%;
+            z-index: -1;
+            filter: blur(12px);
+            opacity: 0.4;
+            border-radius: 22px;
+            animation: rgb-move 10s linear infinite;
+        }
+
+        @keyframes rgb-move { 
+            0% { background-position: 0% 50%; } 
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; } 
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px;
+        }
+
+        .header h2 { 
+            color: var(--primary); 
+            margin-bottom: 8px; 
+            font-size: 26px;
+            font-weight: 800;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+        }
+
+        .header p.subtitle { 
+            font-size: 13px; 
+            opacity: 0.7; 
+            letter-spacing: 1px;
+        }
+
+        .input-group { 
+            margin-bottom: 15px; 
+        }
+
+        .input-group label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-size: 14px; 
+            color: #ccc;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.4);
+            color: white;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            background: rgba(0,0,0,0.6);
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+            margin-top: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5);
+        }
+
+        .expense-list {
+            margin-top: 25px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .expense-list::-webkit-scrollbar { width: 6px; }
+        .expense-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .expense-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .expense-item:hover {
+            background: rgba(255,255,255,0.05);
+            transform: translateX(5px);
+        }
+
+        .expense-item .name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .expense-item .price {
+            color: var(--secondary);
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .total-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 210, 255, 0.1);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 22px;
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            box-shadow: inset 0 0 20px rgba(0, 210, 255, 0.1);
+        }
+
+        .total-box span {
+            font-weight: 800;
+            font-size: 28px;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn-action {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .btn-pdf { background: linear-gradient(45deg, #e74c3c, #c0392b); box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
+        .btn-tele { background: linear-gradient(45deg, #0088cc, #005f8f); box-shadow: 0 4px 10px rgba(0, 136, 204, 0.3); }
+        .btn-drive { background: linear-gradient(45deg, #1da1f2, #1072b0); box-shadow: 0 4px 10px rgba(29, 161, 242, 0.3); }
+        .btn-clear { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); grid-column: span 2; }
+        .btn-clear:hover { background: rgba(255, 51, 102, 0.2); border-color: #ff3366; color: #ff3366; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: -300px;
+            background: rgba(0, 0, 0, 0.8);
+            border-left: 4px solid var(--primary);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: right 0.4s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show { right: 20px; }
+
+        #printable-area { background: var(--card-bg); }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+    <i class="fas fa-check-circle" style="color: var(--primary);"></i>
+    <span id="toast-msg">আপডেট সম্পন্ন হয়েছে!</span>
+</div>
+
+<div class="container" id="printable-area">
+    <div class="header">
+        <h2>মাহাদী হাসান তামিম</h2>
+        <p class="subtitle">পার্সোনাল এক্সপেন্স ক্যালকুলেটর (Premium Edition)</p>
+    </div>
+
+    <div class="input-group" data-html2canvas-ignore="true">
+        <label>খরচের বিবরণ</label>
+        <input type="text" id="reason" placeholder="উদা: মেসের ভাড়া, বাজার, মোবাইল রিচার্জ...">
+    </div>
+    
+    <div class="input-group" data-html2canvas-ignore="true">
+        <label>টাকার পরিমাণ (৳)</label>
+        <input type="number" id="amount" placeholder="উদা: ৫০০">
+    </div>
+    
+    <button class="btn-add" onclick="addExpense()" data-html2canvas-ignore="true">
+        <i class="fas fa-plus-circle"></i> হিসাব যোগ করুন
+    </button>
+
+    <div class="expense-list" id="list"></div>
+
+    <div class="total-box">
+        সর্বমোট: ৳ <span id="total-amount">0</span>
+    </div>
+
+    <div class="action-btns" data-html2canvas-ignore="true">
+        <button class="btn-action btn-pdf" onclick="downloadPDF()">
+            <i class="fas fa-file-pdf"></i> Save PDF
+        </button>
+        <button class="btn-action btn-tele" onclick="syncToCloud('Telegram')">
+            <i class="fab fa-telegram-plane"></i> Sync to Bot
+        </button>
+        <button class="btn-action btn-drive" onclick="uploadToDrive()">
+            <i class="fab fa-google-drive"></i> Save to Drive
+        </button>
+        <button class="btn-action btn-clear" onclick="clearData()">
+            <i class="fas fa-trash-alt"></i> সব মুছে ফেলুন (Reset)
+        </button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // কনফিগ: আপনার Google Apps Script ওয়েব অ্যাপ URL টি এখানে বসান
+    // ==========================================
+    const GOOGLE_DRIVE_UPLOAD_URL = 'YOUR_WEB_APP_URL'; // ← এখানে বসান আপনার কপি করা URL (শেষে /exec সহ)
+
+    const defaultExpenses = [
+        { name: "ভর্তির সময় (বাসা থেকে)", price: 63000 },
+        { name: "ঢাকা আসার সময় (ভর্তি)", price: 5000 },
+        { name: "ঢাকা আসা (ক্লাসের জন্য)", price: 5500 },
+        { name: "নতুন বাসার জন্য", price: 10000 },
+        { name: "বাসা থেকে আসার সময় (বাস টিকেট)", price: 1000 },
+        { name: "আসার দিন আনা টাকা", price: 4000 },
+        { name: "আব্বুর বিকাশ (৮০০০ টাকা)", price: 8000 }
+    ];
+
+    let expenses = [];
+    
+    try {
+        let saved = localStorage.getItem('tamim_expenses');
+        if (saved) {
+            expenses = JSON.parse(saved);
+        }
+    } catch(e) {}
+
+    if (!Array.isArray(expenses) || expenses.length === 0) {
+        expenses = JSON.parse(JSON.stringify(defaultExpenses));
+        localStorage.setItem('tamim_expenses', JSON.stringify(expenses));
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-msg').innerText = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function updateUI() {
+        const listElement = document.getElementById('list');
+        const totalElement = document.getElementById('total-amount');
+        listElement.innerHTML = '';
+        let total = 0;
+
+        expenses.forEach((item, index) => {
+            total += parseFloat(item.price);
+            listElement.innerHTML += `
+                <div class="expense-item">
+                    <span class="name"><i class="fas fa-caret-right" style="color:var(--primary); margin-right:5px;"></i> ${item.name}</span>
+                    <span class="price">${item.price.toLocaleString('en-IN')} ৳</span>
+                </div>
+            `;
+        });
+
+        totalElement.innerText = total.toLocaleString('en-IN');
+        localStorage.setItem('tamim_expenses', JSON.stringify(expenses));
+    }
+
+    function addExpense() {
+        const name = document.getElementById('reason').value;
+        const price = document.getElementById('amount').value;
+
+        if(name && price) {
+            expenses.push({ name: name, price: parseFloat(price) });
+            updateUI();
+            document.getElementById('reason').value = '';
+            document.getElementById('amount').value = '';
+            showToast("নতুন হিসাব যোগ করা হয়েছে!");
+        } else {
+            alert("দয়া করে খরচের নাম এবং টাকার পরিমাণ দুইটাই লিখুন!");
+        }
+    }
+
+    function clearData() {
+        if(confirm("আপনি কি নিশ্চিত যে সব হিসাব মুছে ফেলতে চান?")) {
+            expenses = [];
+            updateUI();
+            showToast("সব ডাটা মুছে ফেলা হয়েছে!");
+        }
+    }
+
+    // সাধারণ PDF ডাউনলোড
+    function downloadPDF() {
+        showToast("PDF তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...");
+        const { jsPDF } = window.jspdf;
+        const element = document.querySelector("#printable-area");
+        const originalBg = element.style.background;
+        element.style.background = "#0f0c29";
+        element.style.padding = "20px";
+        element.style.borderRadius = "0";
+
+        html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#0f0c29"
+        }).then(canvas => {
+            element.style.background = originalBg;
+            element.style.padding = "30px";
+            element.style.borderRadius = "20px";
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps= pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save("Tamims_Expense_Report.pdf");
+            showToast("PDF ডাউনলোড সম্পন্ন হয়েছে!");
+        });
+    }
+
+    // ==========================================
+    // Google Drive-এ PDF আপলোডের ফাংশন
+    // ==========================================
+    async function uploadToDrive() {
+        if (GOOGLE_DRIVE_UPLOAD_URL === 'YOUR_WEB_APP_URL') {
+            alert("অনুগ্রহ করে প্রথমে Google Apps Script-এর Web App URL বসান। উপরের কনফিগ সেকশন দেখুন।");
+            return;
+        }
+
+        showToast("PDF তৈরি ও Drive-এ আপলোড হচ্ছে...");
+        
+        const { jsPDF } = window.jspdf;
+        const element = document.querySelector("#printable-area");
+        const originalBg = element.style.background;
+        element.style.background = "#0f0c29";
+        element.style.padding = "20px";
+        element.style.borderRadius = "0";
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#0f0c29"
+            });
+
+            element.style.background = originalBg;
+            element.style.padding = "30px";
+            element.style.borderRadius = "20px";
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps= pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            // PDF কে বেস64 স্ট্রিং এ রূপান্তর (ডেটা ইউআরএল থেকে বেস64 অংশ নিন)
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+            
+            // Apps Script-এ পাঠানোর জন্য ফাইল নাম তৈরি (বর্তমান তারিখসহ)
+            const now = new Date();
+            const fileName = `Tamims_Expense_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}.pdf`;
+
+            // পোস্ট রিকুয়েস্ট
+            const response = await fetch(GOOGLE_DRIVE_UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    base64: pdfBase64,
+                    fileName: fileName
+                })
+            });
+
+            const result = await response.json();
+            if (result.status === 'success') {
+                showToast("সফলভাবে Drive-এ আপলোড হয়েছে!");
+                console.log("File URL:", result.fileUrl);
+            } else {
+                showToast("আপলোড ব্যর্থ: " + result.message);
+            }
+        } catch (error) {
+            console.error(error);
+            showToast("আপলোডে সমস্যা হয়েছে।");
+        }
+    }
+
+    function syncToCloud(platform) {
+        showToast(`Preparing to sync with ${platform}...`);
+        // Telegram sync (চাইলে পরবর্তীতে বসাতে পারেন)
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>
