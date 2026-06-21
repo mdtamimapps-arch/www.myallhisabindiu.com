@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tamim's Expense Tracker - Premium</title>
     
+    <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -49,6 +52,7 @@
             position: relative;
         }
 
+        /* Animated RGB Glow Border */
         .container::before {
             content: '';
             position: absolute;
@@ -144,11 +148,13 @@
 
         .expense-list {
             margin-top: 25px;
-            max-height: 280px;
-            overflow-y: auto;
+            /* নিচের লাইন দুটো সরিয়ে দিয়েছি, যাতে পুরো তালিকা একসাথে দেখায় */
+            /* max-height: 280px; */
+            /* overflow-y: auto; */
             padding-right: 5px;
         }
 
+        /* Scrollbar styles (এখন দরকার হবে না, কিন্তু রেখে দিলাম) */
         .expense-list::-webkit-scrollbar { width: 6px; }
         .expense-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
         .expense-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
@@ -232,6 +238,7 @@
         .btn-clear { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); grid-column: span 2; }
         .btn-clear:hover { background: rgba(255, 51, 102, 0.2); border-color: #ff3366; color: #ff3366; }
 
+        /* Notification Toast */
         .toast {
             position: fixed;
             top: 20px;
@@ -257,6 +264,7 @@
 </head>
 <body>
 
+<!-- Notification Toast -->
 <div class="toast" id="toast">
     <i class="fas fa-check-circle" style="color: var(--primary);"></i>
     <span id="toast-msg">আপডেট সম্পন্ন হয়েছে!</span>
@@ -268,6 +276,7 @@
         <p class="subtitle">পার্সোনাল এক্সপেন্স ক্যালকুলেটর (Premium Edition)</p>
     </div>
 
+    <!-- ইনপুট ফিল্ড (PDF জেনারেশনের সময় এগুলো বাদ যাবে) -->
     <div class="input-group" data-html2canvas-ignore="true">
         <label>খরচের বিবরণ</label>
         <input type="text" id="reason" placeholder="উদা: মেসের ভাড়া, বাজার, মোবাইল রিচার্জ...">
@@ -282,12 +291,17 @@
         <i class="fas fa-plus-circle"></i> হিসাব যোগ করুন
     </button>
 
-    <div class="expense-list" id="list"></div>
+    <!-- খরচের তালিকা -->
+    <div class="expense-list" id="list">
+        <!-- ডাইনামিক্যালি এখানে সব খরচ দেখাবে -->
+    </div>
 
+    <!-- সর্বমোট টাকার বক্স -->
     <div class="total-box">
         সর্বমোট: ৳ <span id="total-amount">0</span>
     </div>
 
+    <!-- অ্যাকশন বাটন (PDF, Drive ইত্যাদি) -->
     <div class="action-btns" data-html2canvas-ignore="true">
         <button class="btn-action btn-pdf" onclick="downloadPDF()">
             <i class="fas fa-file-pdf"></i> Save PDF
@@ -305,11 +319,14 @@
 </div>
 
 <script>
-    // ==========================================
-    // কনফিগ: আপনার Google Apps Script ওয়েব অ্যাপ URL টি এখানে বসান
-    // ==========================================
-    const GOOGLE_DRIVE_UPLOAD_URL = 'YOUR_WEB_APP_URL'; // ← এখানে বসান আপনার কপি করা URL (শেষে /exec সহ)
+    // ==========================================================
+    // ⚠️ Google Drive-এ আপলোড করতে চাইলে এখানে আপনার Apps Script URL বসান
+    // ==========================================================
+    const GOOGLE_DRIVE_UPLOAD_URL = 'YOUR_WEB_APP_URL'; // ← এখানে বসান (শেষে /exec সহ)
 
+    // ==========================================================
+    // ডিফল্ট খরচের তালিকা (৭টি আইটেম)
+    // ==========================================================
     const defaultExpenses = [
         { name: "ভর্তির সময় (বাসা থেকে)", price: 63000 },
         { name: "ঢাকা আসার সময় (ভর্তি)", price: 5000 },
@@ -322,6 +339,7 @@
 
     let expenses = [];
     
+    // লোকাল স্টোরেজ থেকে আগের ডাটা আনি (থাকলে)
     try {
         let saved = localStorage.getItem('tamim_expenses');
         if (saved) {
@@ -329,11 +347,13 @@
         }
     } catch(e) {}
 
+    // যদি কোনো ডাটা না থাকে, তাহলে ডিফল্ট তালিকা ব্যবহার করি
     if (!Array.isArray(expenses) || expenses.length === 0) {
         expenses = JSON.parse(JSON.stringify(defaultExpenses));
         localStorage.setItem('tamim_expenses', JSON.stringify(expenses));
     }
 
+    // টোস্ট মেসেজ দেখানোর ফাংশন
     function showToast(message) {
         const toast = document.getElementById('toast');
         document.getElementById('toast-msg').innerText = message;
@@ -341,13 +361,14 @@
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
+    // তালিকা ও টোটাল আপডেট করার ফাংশন
     function updateUI() {
         const listElement = document.getElementById('list');
         const totalElement = document.getElementById('total-amount');
         listElement.innerHTML = '';
         let total = 0;
 
-        expenses.forEach((item, index) => {
+        expenses.forEach((item) => {
             total += parseFloat(item.price);
             listElement.innerHTML += `
                 <div class="expense-item">
@@ -361,6 +382,7 @@
         localStorage.setItem('tamim_expenses', JSON.stringify(expenses));
     }
 
+    // নতুন খরচ যোগ করার ফাংশন
     function addExpense() {
         const name = document.getElementById('reason').value;
         const price = document.getElementById('amount').value;
@@ -376,6 +398,7 @@
         }
     }
 
+    // সব মুছে ফেলার ফাংশন
     function clearData() {
         if(confirm("আপনি কি নিশ্চিত যে সব হিসাব মুছে ফেলতে চান?")) {
             expenses = [];
@@ -384,7 +407,7 @@
         }
     }
 
-    // সাধারণ PDF ডাউনলোড
+    // শুধু PDF ডাউনলোড (ড্রাইভে আপলোড ছাড়া)
     function downloadPDF() {
         showToast("PDF তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...");
         const { jsPDF } = window.jspdf;
@@ -414,9 +437,7 @@
         });
     }
 
-    // ==========================================
-    // Google Drive-এ PDF আপলোডের ফাংশন
-    // ==========================================
+    // Google Drive-এ PDF আপলোড
     async function uploadToDrive() {
         if (GOOGLE_DRIVE_UPLOAD_URL === 'YOUR_WEB_APP_URL') {
             alert("অনুগ্রহ করে প্রথমে Google Apps Script-এর Web App URL বসান। উপরের কনফিগ সেকশন দেখুন।");
@@ -450,14 +471,14 @@
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             
-            // PDF কে বেস64 স্ট্রিং এ রূপান্তর (ডেটা ইউআরএল থেকে বেস64 অংশ নিন)
+            // PDF কে Base64 স্ট্রিং এ রূপান্তর
             const pdfBase64 = pdf.output('datauristring').split(',')[1];
             
-            // Apps Script-এ পাঠানোর জন্য ফাইল নাম তৈরি (বর্তমান তারিখসহ)
+            // ফাইল নাম তৈরি (তারিখ সহ)
             const now = new Date();
             const fileName = `Tamims_Expense_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}.pdf`;
 
-            // পোস্ট রিকুয়েস্ট
+            // Apps Script-এ পাঠানো
             const response = await fetch(GOOGLE_DRIVE_UPLOAD_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -480,11 +501,13 @@
         }
     }
 
+    // টেলিগ্রাম সিঙ্ক (ডেমো)
     function syncToCloud(platform) {
         showToast(`Preparing to sync with ${platform}...`);
-        // Telegram sync (চাইলে পরবর্তীতে বসাতে পারেন)
+        // পরবর্তীতে টেলিগ্রাম বট API এখানে সংযোজন করতে পারেন
     }
 
+    // পেজ লোড হলেই তালিকা ও টোটাল দেখানো
     updateUI();
 </script>
 
